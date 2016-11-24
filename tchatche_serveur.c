@@ -23,7 +23,6 @@ int main(int argc, char *argv[]){
 	ut -> l = delete_user(ut -> l, u5);
 	print_utilisateurs(ut -> l);
 
-	free_utilisateurs(ut);
 	free_user(u);
 	free_user(u2);
 	free_user(u3);
@@ -124,7 +123,7 @@ void free_utilisateurs(utilisateurs *ut){
 
 	if(ut == NULL || ut -> l == NULL)
 		return;
-	
+
 	if(ut -> l -> next == NULL){
 		free(ut -> l);
 		free(ut);
@@ -136,7 +135,7 @@ void free_utilisateurs(utilisateurs *ut){
 		free(ut -> l);
 		ut -> l = tmp;
 	}
-
+	
 	free(ut);
 }
 
