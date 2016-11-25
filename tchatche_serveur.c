@@ -2,13 +2,20 @@
 #include <stdlib.h>
 #include <string.h>
 #include "tchatche_serveur.h"
+#include "conversions.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+#define BUFF_SIZE	1024
+
+int id = 2;
 
 int main(int argc, char *argv[]){
 	
-	user *u = init_user(0,"amine","toto"), *u2 = init_user(1,"vincent","tutu"), *u3 = init_user(2,"andy","tata"), *u4 = init_user(3,"paul","titi"), *u5 = init_user(4,"mathieu","tete"), *u6 = init_user(5,"paul","tyty");
-	utilisateurs *ut = init_utilisateurs(u);
+	
+	/*= init_user(0,"amine","toto"), *u2 = init_user(1,"vincent","tutu"), *u3 = init_user(2,"andy","tata"), *u4 = init_user(3,"paul","titi"), *u5 = init_user(4,"mathieu","tete"), *u6 = init_user(5,"paul","tyty");
 	int n;
 	
 	add_user(ut -> l,u2);
@@ -31,56 +38,58 @@ int main(int argc, char *argv[]){
 	free_user(u6);
 	
 	free_utilisateurs(ut);
+	*/
+
+	user *u1 = init_user(1,"amine","toto");
+	utilisateurs *ut = init_utilisateurs(u1);
+	int fd_server, fd_client;
+	char reader[BUFF_SIZE], *pseudo = (char *)malloc(100*sizeof(*pseudo)), *pipe = (char *)malloc(100*sizeof(*pipe));
+
+	if(mkfifo("server",0737) != 0){
+		perror("mkfifo ");
+		exit(EXIT_FAILURE);
+	}
+
+	if((fd_server = open("server", O_RDONLY)) == -1){
+		perror("open, ouverture du serveur en lecture chez le serveur");
+		exit(EXIT_FAILURE);
+	}
+
+	if((fd_client = open("client", O_WRONLY)) == -1){
+		perror("open, ouverture du client en écriture chez le serveur ");
+		exit(EXIT_FAILURE);
+	}
+
+	read(fd_server,reader,BUFF_SIZE);
+
+	if(type_message(reader) == 1){
+		printf("type_message = 1\n");
+		user *u;
+		char *s, *ide = (char *)malloc(10*sizeof(*ide));
+		
+		pseudo = helo_to_pseudo(reader);
+		pipe = helo_to_pipe(reader);
+		u = init_user(-1,pseudo,pipe); 
+
+		if(taken_login(ut -> l,u)){
+			s = string_to_protocole("pseudo déjà utilisé","BADD");
+			write(fd_client,s,BUFF_SIZE);
+			free(u);
+			exit(EXIT_FAILURE);
+		}
+
+		else{
+			u -> id = id++;
+			add_user(ut -> l,u);
+			sprintf(ide,"%d",u -> id);
+			s = string_to_protocole(ide,"OKOK");
+			write(fd_client,s,BUFF_SIZE);
+		}	
+	}
+
+	print_utilisateurs(ut -> l);	
 
 	return 0;
-}
-
-int type_message(char *message){
-	
-	char *s = type(message);
-	int t;
-
-	if(!strcmp(s,"HELO"))
-		t = 1;
-	if(!strcmp(s,"OKOK"))
-		t = 2;
-	if(!strcmp(s,"BADD"))
-		t = 3;
-	if(!strcmp(s,"BYEE"))
-		t = 4;
-	if(!strcmp(s,"BCST"))
-		t = 5;
-	if(!strcmp(s,"PRVT"))
-		t = 6;
-	if(!strcmp(s,"LIST"))
-		t = 7;
-	if(!strcmp(s,"CHAT"))
-		t = 8;
-	if(!strcmp(s,"DEBG"))
-		t = 9;
-	if(!strcmp(s,"FILE"))
-		t = 10;
-	if(!strcmp(s,"SHUT"))
-		t = 11;
-
-	return t;
-}
-
-char *type(char *message){
-	
-	char *s = (char *)malloc(4*sizeof(*s));
-	int i;
-
-	if(strlen(message) < 8){
-		fprintf(stderr,"taille du message non valide.\n");
-		return NULL;
-	}
-	
-	for(i=4;i<=7;i++){
-		s[i-4] = message[i];
-	}	
-
-	return s;
 }
 
 user *init_user(int id, char *pseudo, char *pipe){
@@ -281,3 +290,4 @@ int taken_login(user_list *l, user *usr){
 	}
 	return compare(&(l -> val),usr);
 }
+

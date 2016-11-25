@@ -47,10 +47,7 @@ user_list *delete_user(user_list *l, user *usr);
 
 int nb_users(user_list *l);
 
-int type_message(char *message);
-
-char *type(char *message);
-
 int compare(user *usr1, user *usr2);
 
 int taken_login(user_list *l, user *usr);
+
