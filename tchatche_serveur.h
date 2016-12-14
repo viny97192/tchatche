@@ -2,6 +2,7 @@ typedef struct user_list user_list;
 
 typedef struct user{
 	int id;
+	int fd;
 	char *pseudo;
 	char *pipe;
 }user;
@@ -13,19 +14,8 @@ struct user_list{
 
 typedef struct utilisateurs{
 	user_list *l;
-	/*
-	int capacite;
-	*/
 	int nb_users;	
 }utilisateurs;
-
-/*
-typedef struct message{
-	int length;
-	char type[4];
-	char *string;
-}message;
-*/
 
 user *init_user(int id, char *pseudo, char *pipe);
 
@@ -35,19 +25,24 @@ utilisateurs *init_utilisateurs(user *usr);
 
 void free_user(user *u);
 
-void free_utilisateurs(utilisateurs *ut);
+void print_user_list(user_list *l);
 
-void print_user(user *u);
+void free_utilisateurs(utilisateurs *ut);
 
 void print_utilisateurs(user_list *l);
 
-int add_user(user_list *l, user *usr);
+void add_user(user_list *l, user *usr);
 
-user_list *delete_user(user_list *l, user *usr);
+user_list *delete_user(user_list *l, int id);
 
 int nb_users(user_list *l);
 
+char *get_pseudo(user_list *l, int id);
+
+int get_fd(user_list *l, int id);
+
+char *get_pipe(user_list *l, int id);
+
 int compare(user *usr1, user *usr2);
 
-int taken_login(user_list *l, user *usr);
-
+int taken_login(user_list *l, char *login);
