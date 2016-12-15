@@ -16,7 +16,7 @@ utilisateurs *ut;
 int main(int argc, char *argv[]){
 
 	char *fifo_client = (char *)malloc(100*sizeof(*fifo_client)), *request = (char *)malloc(100*sizeof(*request)); 
-	int fd_server;
+	int fd_server, fd_dummy;
 	message *m; 
 	
 	if(mkfifo("fifo_server", 0666) == -1){
@@ -25,7 +25,12 @@ int main(int argc, char *argv[]){
 	}
 
 	if((fd_server = open("fifo_server", O_RDONLY)) == -1){
-		fprintf(stderr,"open fifo_server");
+		fprintf(stderr,"open fifo_server lecture");
+		exit(EXIT_FAILURE);
+	}
+
+	if((fd_dummy = open("fifo_server", O_WRONLY)) == -1){
+		fprintf(stderr,"open fifo_server écriture");
 		exit(EXIT_FAILURE);
 	}
 
@@ -40,6 +45,7 @@ int main(int argc, char *argv[]){
 
 		m = parse_server(request);
 		response_to_client(m);
+		strcpy(request,"");
 
 	}
 
@@ -60,25 +66,11 @@ void response_to_client(message *m){
 			return;
 		}
 
-		if(id == 1){
+		if(id == 1 ||  ut -> nb_users == 0){
 			ut = init_utilisateurs(u);		
+			ut -> nb_users++;
 			id++;
 		}
-		
-		/*
-		else if(taken_login(ut -> l, m -> pseudo) == 0){
-			fprintf(stdout,"pseudo déjà pris\n");
-			m = build_message("BADD","","","","","");	
-			response = format_protocole_server(m);
-			print_message(m);
-			fprintf(stdout,"response = %s\n", response);
-
-			if(write(u -> fd,response,strlen(response)) == -1){
-				fprintf(stderr,"write %s\n", u -> pipe);
-				return;
-			}
-		}
-		*/
 
 		else{
 			add_user(ut -> l, u);
@@ -127,6 +119,28 @@ void response_to_client(message *m){
 		}
 
 		ut -> l = delete_user(ut -> l, atoi(m -> id));
+		ut -> nb_users--;
+	}
+
+	else if(!strcmp(m -> type,"PRVT")){
+		int fd = get_fd(ut -> l, atoi(m -> id)), fd2 = get_fd2(ut -> l, m -> pseudo);	
+		
+		m2 = build_message("PRVT",get_pseudo(ut -> l, atoi(m -> id)),"","",m -> message,"");
+		response = format_protocole_server(m2);
+
+		if(write(fd2,response,strlen(response)) == -1){
+			fprintf(stderr,"write %s", m -> pseudo);
+			return;
+		}
+
+		m2 = build_message("OKOK","","",m -> id,"","");
+		response = format_protocole_server(m2);
+
+		if(write(fd,response,strlen(response)) == -1){
+			fprintf(stderr,"write %s", m -> pseudo);
+			return;
+		}
+
 	}
 }
 
@@ -249,7 +263,7 @@ user_list *delete_user(user_list *l, int id){
 
 	if(l -> next == NULL){
 		free(l);	
-		return NULL;
+		return l;
 	}
 
 	if(l -> val.id == id){
@@ -333,6 +347,28 @@ int get_fd(user_list *l, int id){
 		return -1;
 
 	return get_fd(l -> next, id);
+}
+
+int get_fd2(user_list *l, char *pseudo){
+	if(l == NULL){
+		fprintf(stderr,"Attention liste non initialisée.\n");
+		return -1;
+	}
+	
+	if(pseudo == NULL){
+		fprintf(stderr,"Attention pseudo non initialisé.\n");
+		return -1;
+	
+	}
+
+	if(!strcmp(l -> val.pseudo,pseudo)){
+		return l -> val.fd;
+	}
+	
+	if(l -> next == NULL && strcmp(l -> val.pseudo,pseudo))
+		return -1;
+
+	return get_fd2(l -> next, pseudo);
 }
 
 char *get_pipe(user_list *l, int id){

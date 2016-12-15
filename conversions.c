@@ -101,7 +101,7 @@ message *parse_server(char *msg){
 			m -> message[k] = msg[i];
 	}
 	
-	else if(!strcmp(m -> type,"PVRT")){
+	else if(!strcmp(m -> type,"PRVT")){
 		for(k=0;i<12;i++,k++)
 			m -> id[k] = msg[i];
 		for(k=0;i<16;i++,k++)
@@ -177,7 +177,7 @@ void print_message(message *m){
 	fprintf(stdout,"m -> tube = %s\n", m -> tube);
 	fprintf(stdout,"m -> id = %s\n", m -> id);
 	fprintf(stdout,"m -> message = %s\n", m -> message);
-	fprintf(stdout,"m -> n = %s\n", m -> n);
+	fprintf(stdout,"m -> n = %s\n\n", m -> n);
 }
 
 char *format_protocole_server(message *m){

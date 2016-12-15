@@ -41,6 +41,8 @@ char *get_pseudo(user_list *l, int id);
 
 int get_fd(user_list *l, int id);
 
+int get_fd2(user_list *l, char *pseudo);
+
 char *get_pipe(user_list *l, int id);
 
 int compare(user *usr1, user *usr2);
