@@ -45,8 +45,7 @@ int main(int argc, char *argv[]){
 
 		m = parse_server(request);
 		response_to_client(m);
-		strcpy(request,"");
-
+		init_string(request);
 	}
 
 	unlink("fifo_serv");
@@ -66,9 +65,8 @@ void response_to_client(message *m){
 			return;
 		}
 
-		if(id == 1 ||  ut -> nb_users == 0){
+		if(id == 1 ){ 
 			ut = init_utilisateurs(u);		
-			ut -> nb_users++;
 			id++;
 		}
 
@@ -106,7 +104,8 @@ void response_to_client(message *m){
 
 	else if(!strcmp(m -> type,"BYEE")){
 		int fd = get_fd(ut -> l, atoi(m -> id));
-		response = format_protocole_server(m);
+		m2 = build_message("BYEE","","",m -> id,"","");
+		response = format_protocole_server(m2);
 		
 		if(write(fd,response,strlen(response)) == -1){
 			fprintf(stderr,"write BYEE\n");
@@ -119,7 +118,6 @@ void response_to_client(message *m){
 		}
 
 		ut -> l = delete_user(ut -> l, atoi(m -> id));
-		ut -> nb_users--;
 	}
 
 	else if(!strcmp(m -> type,"PRVT")){
@@ -140,8 +138,9 @@ void response_to_client(message *m){
 			fprintf(stderr,"write %s", m -> pseudo);
 			return;
 		}
-
 	}
+
+	init_string(response);
 }
 
 user *init_user(int id, char *pseudo, char *pipe){
@@ -168,7 +167,7 @@ utilisateurs *init_utilisateurs(user *usr){
 	utilisateurs *ut = (utilisateurs *)malloc(sizeof(*ut));
 
 	ut -> l = init_user_list(usr);
-	ut -> nb_users = 0;
+	ut -> nb_users = 1;
 	ut -> l -> next = NULL;
 
 	return ut;
@@ -222,7 +221,8 @@ void print_utilisateurs(user_list *l){
 void add_user(user_list *l, user *usr){
 
 	if(l == NULL){
-		fprintf(stderr,"Erreur, le serveur n'a pas été initalisé.\n");
+		ut -> l = init_user_list(usr);
+		ut -> nb_users += 1;
 		return;
 	}
 
@@ -234,6 +234,7 @@ void add_user(user_list *l, user *usr){
 	if(l -> next == NULL){
 		user_list *lusr = init_user_list(usr);
 		l -> next = lusr;
+		ut -> nb_users += 1;
 		return;
 	}
 
@@ -242,6 +243,35 @@ void add_user(user_list *l, user *usr){
 
 user_list *delete_user(user_list *l, int id){
 
+	if(l == NULL){
+		fprintf(stderr,"Erreur, aucun utilisateur n'est connecté.\n");
+		return NULL;
+	}
+
+	if(l -> val.id == id){
+		user_list *tmp = l -> next;;
+		free(l);
+		ut -> nb_users -= 1;
+		return tmp;
+	}
+
+	if(l -> next == NULL){
+		free(l);
+		ut -> nb_users -= 1;
+		return NULL;
+	}
+
+	if(l -> next -> val.id == id){
+		user_list *tmp = l -> next;;
+		l -> next = l -> next -> next;
+		free(tmp);
+		ut -> nb_users -= 1;
+		return l;
+	}
+
+	return delete_user(l -> next,id);
+
+	/*
 	user_list *tmp = l, *tmp2;
 
 	if(l == NULL){
@@ -254,12 +284,15 @@ user_list *delete_user(user_list *l, int id){
 		return l;
 	}
 
-	/*
+	if(ut -> nb_users == 1){
+		free(ut -> l);
+		return NULL;
+	}
+
 	if(!taken_login(l,usr -> pseudo)){
 		fprintf(stderr,"Attention, cet utilisateur n'est pas connecté.\n");
 		return l;
 	}
-	*/
 
 	if(l -> next == NULL){
 		free(l);	
@@ -293,6 +326,7 @@ user_list *delete_user(user_list *l, int id){
 	free(tmp -> next);
 	tmp -> next = NULL;
 	return l;
+	*/
 }
 
 int nb_users(user_list *l){
@@ -312,7 +346,6 @@ char *get_pseudo(user_list *l, int id){
 	if(id <= 0){
 		fprintf(stderr,"Attention identifiant négatif.\n");
 		return NULL;
-	
 	}
 
 	if(id == l -> val.id)
@@ -398,7 +431,6 @@ char *get_pipe(user_list *l, int id){
 /*
 int compare(user *usr1, user *usr2){
 	int taken = 0;
-
 	if(usr1 == NULL || usr2 == NULL)
 		taken = -1;
 	
@@ -408,7 +440,6 @@ int compare(user *usr1, user *usr2){
 		taken = 1;
 	else if(!strcmp(usr1 -> pipe, usr2 -> pipe))
 		taken = 2;
-
 	return taken;
 }
 */

@@ -73,6 +73,8 @@ int main(int argc, char *argv[]){
 			fprintf(stderr,"Impossible d'écrire au serveur.\n");
 			continue;
 		}
+
+		init_string(request);
 	}
 
 	return 0;
@@ -81,9 +83,6 @@ int main(int argc, char *argv[]){
 void *server_response(void *args){
 	
 	char *response = (char *)malloc(100*sizeof(*response)); 
-	/*
-	*fifo_client = (char *)malloc(100*sizeof(*fifo_client)), 
-	*/
 	message *m;
 
 	strcpy(fifo_client,"fifo_client.");
@@ -107,6 +106,7 @@ void *server_response(void *args){
 
 		m = parse_client(response);
 		print_response(m);
+		init_string(response);
 	}
 }
 
@@ -143,4 +143,3 @@ void print_response(message *m){
 	}
 
 }
-

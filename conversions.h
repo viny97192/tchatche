@@ -8,6 +8,8 @@ typedef struct message{
 	char *n;
 }message;
 
+void init_string(char *s);
+
 message *init_message();
 
 void free_message(message *m);

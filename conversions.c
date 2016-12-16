@@ -6,6 +6,13 @@
 
 message *m;
 
+void init_string(char *s){
+	int i, k = (int)strlen(s);
+
+	for(i=0;i<k;i++)
+		s[i] = ' ';
+}
+
 message *init_message(){
 
 	message *m = (message *)malloc(sizeof(*m));
@@ -34,8 +41,8 @@ void free_message(message *m){
 
 message *build_message(char *type, char *pseudo, char *tube, char *id, char *message, char *n){
 
-	m = init_message();
 	int nb = 4; 
+	m = init_message();
 
 	m -> type = type;
 	m -> pseudo = pseudo;
@@ -47,14 +54,14 @@ message *build_message(char *type, char *pseudo, char *tube, char *id, char *mes
 	if((int)strlen(m -> pseudo) != 0){
 		nb += 4;
 	}
-	else if(16 != 0){
+	else if((int)strlen(m -> tube) != 0){
 		nb += 4;
 	}
 	else if((int)strlen(m -> message) != 0){
 		nb += 4;
 	}
 
-	m -> length = nb_to_protocole(4+nb+(int)strlen(type) + (int)strlen(pseudo) + (int)strlen(tube) + (int)strlen(id) + (int)strlen(message) + (int)strlen(n));
+	m -> length = nb_to_protocole(nb+(int)strlen(type) + (int)strlen(pseudo) + (int)strlen(tube) + (int)strlen(id) + (int)strlen(message) + (int)strlen(n));
 
 	return m;
 }
@@ -296,7 +303,6 @@ int type_message(char *message){
 	
 	char *s = type(message);
 	int t;
-
 	if(!strcmp(s,"HELO"))
 		t = 1;
 	if(!strcmp(s,"OKOK"))
@@ -319,15 +325,12 @@ int type_message(char *message){
 		t = 10;
 	if(!strcmp(s,"SHUT"))
 		t = 11;
-
 	return t;
 }
-
 char *type(char *message){
 	
 	char *s = (char *)malloc(4*sizeof(*s));
 	int i;
-
 	if(strlen(message) < 8){
 		fprintf(stderr,"taille du message non valide.\n");
 		return NULL;
@@ -336,81 +339,59 @@ char *type(char *message){
 	for(i=4;i<=7;i++){
 		s[i-4] = message[i];
 	}	
-
 	return s;
 }
-
 char *helo_to_protocole(char *pseudo, int pid){
-
 	char *helo = (char *)malloc(200*sizeof(*helo)), *length_message = (char *)malloc(4*sizeof(*length_message)), *length_pseudo = (char *)malloc(100*sizeof(*length_pseudo)), *length_tube;
-
 	sprintf(pseudo,"%s|%s", pseudo, pipe);
 	length_message = nb_to_protocole((int)strlen(pseudo)+12);
 	sprintf(helo,"%sHELO%s%s",length_message,nb_to_protocole((int)strlen(pseudo)),pseudo);
-
 	return helo;
 }
-
 int message_to_total_length(char *message){
 	char total_length[4];
 	int i;
-
 	for(i=0;i<4;i++)
 		total_length[i] = message[i];
 	
 	return atoi(total_length);
 }
-
 int message_to_body_length(char *message){
 	char body_length[4];
 	int i;
-
 	for(i=8;i<12;i++)
 		body_length[i-8] = message[i];
 	
 	return atoi(body_length);
 }
-
 char *helo_to_pseudo(char *helo_message){
 	char *pseudo = (char *)malloc(100*sizeof(*pseudo));	
 	int i;
-
 	for(i=12;helo_message[i] != '|';i++)
 		pseudo[i-12] = helo_message[i];
 	
 	return pseudo;
 }
-
 char *helo_to_pipe(char *helo_message){
 	char *pipe = (char *)malloc(100*sizeof(*pipe));
 	int i, n, k;
-
 	k = (int)strlen(helo_to_pseudo(helo_message))+13;
 	n = message_to_total_length(helo_message);
-
 	for(i=k;i<n;i++)
 		pipe[i-k] = helo_message[i];
-
 	return pipe;
 }
-
 char *string_to_protocole(char *s, char *type){
-
 	char *message = (char *)malloc(500*sizeof(*message)), *length_message = (char *)malloc(4*sizeof(*length_message));
-
 	length_message = nb_to_protocole((int)strlen(s)+12);
 	sprintf(message,"%s%s%s%s",length_message,type,nb_to_protocole((int)strlen(s)),s);
-
 	return message;
 }
-
 char *string_format(char *s){
 	
 	int i, k = strlen(s);
 	char *s2 = (char *)malloc((k-1)*sizeof(*s2));
-
 	strtok(s,"\n");
-
 	for(i=0;i<k;i++)
 		s2[i] = s[i];
 	
